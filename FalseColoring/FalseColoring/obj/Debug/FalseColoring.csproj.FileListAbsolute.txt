@@ -1,0 +1,6 @@
+c:\users\jaredpetersen\documents\visual studio 2013\Projects\FalseColoring\FalseColoring\bin\Debug\FalseColoring.exe.config
+c:\users\jaredpetersen\documents\visual studio 2013\Projects\FalseColoring\FalseColoring\obj\Debug\FalseColoring.csprojResolveAssemblyReference.cache
+c:\users\jaredpetersen\documents\visual studio 2013\Projects\FalseColoring\FalseColoring\bin\Debug\FalseColoring.exe
+c:\users\jaredpetersen\documents\visual studio 2013\Projects\FalseColoring\FalseColoring\bin\Debug\FalseColoring.pdb
+c:\users\jaredpetersen\documents\visual studio 2013\Projects\FalseColoring\FalseColoring\obj\Debug\FalseColoring.exe
+c:\users\jaredpetersen\documents\visual studio 2013\Projects\FalseColoring\FalseColoring\obj\Debug\FalseColoring.pdb
