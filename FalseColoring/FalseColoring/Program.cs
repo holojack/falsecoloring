@@ -31,16 +31,7 @@ namespace FalseColoring
                 // Loop over the rows
                 for (int row = 0; row < grid.GetLength(1); row++)
                 {
-                    if (col == 0)
-                    {
-                        // The far left column of the grid is 2000 degrees celsius by default
-                        grid[col, row] = 2000;
-                    }
-                    else
-                    {
-                        // Otherwise, start with zero degrees celsius
                         grid[col, row] = 0;
-                    }
                 }
             }
 
