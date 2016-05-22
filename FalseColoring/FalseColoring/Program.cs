@@ -10,7 +10,7 @@ namespace FalseColoring
         static void Main(string[] args)
         {
             // Set up the grid dimensions
-            int width = 10;
+            int width = 11;
             int length = 13;
 
             // Declare the 2D array
@@ -21,6 +21,44 @@ namespace FalseColoring
 
             // Solve sequentially
             SeqGaussSeidel(grid);
+
+            // Print the results
+            for (int row = 0; row < width; row++)
+            {
+                for (int col = 0; col < length; col++)
+                {
+                    if (col == length - 1)
+                    {
+                        System.Console.WriteLine(grid[col, row]);
+                    }
+                    else
+                    {
+                        System.Console.Write(grid[col, row] + "-");
+                    }
+                }
+            }
+
+            // Fill the 2D array with the starting values
+            SetupGrid(grid);
+
+            // Solve in parallel
+            ParGaussSeidel(grid);
+
+            // Print the results
+            for (int row = 0; row < width; row++)
+            {
+                for (int col = 0; col < length; col++)
+                {
+                    if (col == length - 1)
+                    {
+                        System.Console.WriteLine(grid[col, row]);
+                    }
+                    else
+                    {
+                        System.Console.Write(grid[col, row] + "-");
+                    }
+                }
+            }
 
             // Program is done, make sure to the let user see the results
             System.Console.WriteLine("Press Any Key to Exit");
@@ -92,7 +130,6 @@ namespace FalseColoring
 
                 // Calculate the temperatures
                 SeqTempSolver(grid);
-                System.Console.WriteLine("");
             }
         }
 
@@ -124,11 +161,77 @@ namespace FalseColoring
                         // Calculate the temperature for the node and store it
                         grid[col, row] = CalcTemp(leftTemp, topTemp, rightTemp, bottomTemp);
                     }
-
-                    // Print the grid temperatures
-                    if (col < grid.GetLength(0) - 1) System.Console.Write(grid[col, row] + " - ");
-                    else System.Console.Write(grid[col, row] + "     \n");
                 }
+            }
+        }
+
+        /*
+         * ParTempSolver
+         * 
+         * Uses a parallel version of the Gauss-Seidell algorithm to find the temperature of each
+         * section of a 2D metal plate that is submerged in a solution with a temperature of 0 degrees
+         * celsius on each of the sides with the exception of the left which has a temperature of
+         * 2000 degrees celsius
+         * 
+         * Parameters:
+         * int[,] grid - The input grid of all the nodes that temperatures will be determined for
+         */
+        static void ParGaussSeidel(int[,] grid)
+        {
+            // Keep calculating the temperatures until they stabilize
+
+            // Previous Grid
+            // Used to make sure the final temperature has been found
+            int[,] prevGrid = new int[grid.GetLength(0), grid.GetLength(1)];
+
+            // Use LINQ to compare the grids (http://stackoverflow.com/questions/12446770/how-to-compare-multidimensional-arrays-in-c-sharp)
+            // Only stop when the previous is the same as the current
+            while (!(prevGrid.Rank == grid.Rank &&
+                     Enumerable.Range(0, prevGrid.Rank).All(dimension => prevGrid.GetLength(dimension) == grid.GetLength(dimension)) &&
+                     prevGrid.Cast<int>().SequenceEqual(grid.Cast<int>())))
+            {
+                // Cannot just assign it straight across because that passes the memory space not the values
+                prevGrid = (int[,])grid.Clone();
+
+                // Calculate the temperatures
+                ParTempSolver(grid);
+            }
+        }
+
+        /*
+         * ParTempSolver
+         * 
+         * Finds the temperature for each of the nodes
+         * 
+         * Parameters:
+         * int[,] grid - The input grid of all the nodes that temperatures will be calculated for
+         */
+        static void ParTempSolver(int[,] grid)
+        {
+            // Set up the Parallel loop for full parallelism
+            ParallelOptions options = new ParallelOptions();
+            options.MaxDegreeOfParallelism = -1;
+
+            // Loop over the rows
+            for (int row = 0; row < grid.GetLength(1); row++)
+            {
+                // Loop over the columns
+                //for (int col = 0; col < grid.GetLength(0); col++)
+                Parallel.For(0, grid.GetLength(0), options, col =>
+                {
+                    // Only loop over the insides, since the outside nodes are equal to the outside temperature
+                    if (col != 0 && col != grid.GetLength(0) - 1 && row != 0 && row != grid.GetLength(1) - 1)
+                    {
+                        // Assume that the starting temperature is 0
+                        int leftTemp = grid[col - 1, row];
+                        int topTemp = grid[col, row - 1];
+                        int rightTemp = grid[col + 1, row];
+                        int bottomTemp = grid[col, row + 1];
+
+                        // Calculate the temperature for the node and store it
+                        grid[col, row] = CalcTemp(leftTemp, topTemp, rightTemp, bottomTemp);
+                    }
+                });
             }
         }
 
