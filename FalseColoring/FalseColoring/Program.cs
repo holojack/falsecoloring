@@ -8,23 +8,24 @@ namespace FalseColoring
     class Program
     {
 
-        private static int cc = Environment.ProcessorCount;
         static void Main(string[] args)
         {
             // Set up the grid dimensions
-            //Parallel will be slower for smaller width and length amounts
+            // Parallel will be slower for smaller grids
             int width = 12;
             int length = 12;
 
             // Declare the 2D array
             int[,] grid = new int[length, width];
 
+            // Keep track of the run time
             Stopwatch sw = new Stopwatch();
+
             // Fill the 2D array with the starting values
             SetupGrid(grid);
 
-            sw.Start();
             // Solve sequentially
+            sw.Start();
             SeqGaussSeidel(grid);
             sw.Stop();
             Console.WriteLine("Elapsed time taken sequentially: {0}", sw.ElapsedMilliseconds);
@@ -54,6 +55,7 @@ namespace FalseColoring
             ParGaussSeidel(grid);
             sw.Stop();
             Console.WriteLine("Elapsed time taken parallel: {0}", sw.ElapsedMilliseconds);
+
             // Print the results
             for (int row = 0; row < width; row++)
             {
@@ -222,21 +224,31 @@ namespace FalseColoring
             ParallelOptions options = new ParallelOptions();
             options.MaxDegreeOfParallelism = -1;
 
-            //Divide the array in chunks each rows/cc size.
-            Parallel.For(0, cc, options, i => {
-                //how many rows the core will process.
-                int lRows = grid.GetLength(1)/cc;
-                //Starting row
+            // Chunk size
+            int chunkSize = 8;
+
+            // Divide the array in chunks each rows/cc size.
+            Parallel.For(0, chunkSize, options, i => {
+
+                // Number of rows the core will process.
+                int lRows = grid.GetLength(1)/chunkSize;
+
+                // Starting row
                 int start = i * lRows;
-                //Ending row
+
+                // Ending row
                 int end = (lRows + 1) * i;
-                //Prevent IndexOutOfBoundsException for last processor.
+
+                // Prevent IndexOutOfBoundsException for last processor.
                 if (end >= grid.GetLength(1))
                 {
                     end = grid.GetLength(1);
                 }
+
+                // Loop over the rows
                 for (int row = start; row < end; row ++ )
                 {
+                    // Loop over the columns
                     for (int col = 0; col < grid.GetLength(0); col++)
                     {
                         // Only loop over the insides, since the outside nodes are equal to the outside temperature
@@ -254,27 +266,6 @@ namespace FalseColoring
                     }
                 }
             });
-            // Loop over the rows
-            /*for (int row = 0; row < grid.GetLength(1); row++)
-            {
-                // Loop over the columns
-                //for (int col = 0; col < grid.GetLength(0); col++)
-                Parallel.For(0, grid.GetLength(0), options, col =>
-                {
-                    // Only loop over the insides, since the outside nodes are equal to the outside temperature
-                    if (col != 0 && col != grid.GetLength(0) - 1 && row != 0 && row != grid.GetLength(1) - 1)
-                    {
-                        // Assume that the starting temperature is 0
-                        int leftTemp = grid[col - 1, row];
-                        int topTemp = grid[col, row - 1];
-                        int rightTemp = grid[col + 1, row];
-                        int bottomTemp = grid[col, row + 1];
-
-                        // Calculate the temperature for the node and store it
-                        grid[col, row] = CalcTemp(leftTemp, topTemp, rightTemp, bottomTemp);
-                    }
-                });
-            }*/
         }
 
         /*
