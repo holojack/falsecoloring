@@ -10,3 +10,9 @@ C:\Users\jaredpetersen\Documents\GitHub\falsecoloring\FalseColoring\FalseColorin
 C:\Users\jaredpetersen\Documents\GitHub\falsecoloring\FalseColoring\FalseColoring\bin\Debug\FalseColoring.exe
 C:\Users\jaredpetersen\Documents\GitHub\falsecoloring\FalseColoring\FalseColoring\bin\Debug\FalseColoring.pdb
 C:\Users\jaredpetersen\Documents\GitHub\falsecoloring\FalseColoring\FalseColoring\obj\Debug\FalseColoring.csprojResolveAssemblyReference.cache
+E:\Code\VisualStudios\falsecoloring\FalseColoring\FalseColoring\bin\Debug\FalseColoring.exe.config
+E:\Code\VisualStudios\falsecoloring\FalseColoring\FalseColoring\obj\Debug\FalseColoring.exe
+E:\Code\VisualStudios\falsecoloring\FalseColoring\FalseColoring\obj\Debug\FalseColoring.pdb
+E:\Code\VisualStudios\falsecoloring\FalseColoring\FalseColoring\bin\Debug\FalseColoring.exe
+E:\Code\VisualStudios\falsecoloring\FalseColoring\FalseColoring\bin\Debug\FalseColoring.pdb
+E:\Code\VisualStudios\falsecoloring\FalseColoring\FalseColoring\obj\Debug\FalseColoring.csprojResolveAssemblyReference.cache
