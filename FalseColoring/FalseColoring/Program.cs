@@ -13,11 +13,12 @@ namespace FalseColoring
         {
             // Set up the grid dimensions
             //Parallel will be slower for smaller width and length amounts
-            int width = 12;
-            int length = 12;
+            int width = 2001;
+            int length = 2000;
 
             // Declare the 2D array
             int[,] grid = new int[length, width];
+            int[,] gridtwo = new int[length, width];
 
             Stopwatch sw = new Stopwatch();
             // Fill the 2D array with the starting values
@@ -30,7 +31,7 @@ namespace FalseColoring
             Console.WriteLine("Elapsed time taken sequentially: {0}", sw.ElapsedMilliseconds);
 
             // Print the results
-            for (int row = 0; row < width; row++)
+            /*for (int row = 0; row < width; row++)
             {
                 for (int col = 0; col < length; col++)
                 {
@@ -43,19 +44,19 @@ namespace FalseColoring
                         System.Console.Write(grid[col, row] + "-");
                     }
                 }
-            }
+            }*/
 
             // Fill the 2D array with the starting values
-            SetupGrid(grid);
+            SetupGrid(gridtwo);
 
             // Solve in parallel
             sw.Reset();
             sw.Start();
-            ParGaussSeidel(grid);
+            ParGaussSeidel(gridtwo);
             sw.Stop();
             Console.WriteLine("Elapsed time taken parallel: {0}", sw.ElapsedMilliseconds);
             // Print the results
-            for (int row = 0; row < width; row++)
+            /*for (int row = 0; row < width; row++)
             {
                 for (int col = 0; col < length; col++)
                 {
@@ -68,9 +69,16 @@ namespace FalseColoring
                         System.Console.Write(grid[col, row] + "-");
                     }
                 }
-            }
+            }*/
 
             // Program is done, make sure to the let user see the results
+
+            if(gridtwo.Rank == grid.Rank &&
+                     Enumerable.Range(0, gridtwo.Rank).All(dimension => gridtwo.GetLength(dimension) == grid.GetLength(dimension)) &&
+                     gridtwo.Cast<int>().SequenceEqual(grid.Cast<int>()))
+            {
+                Console.WriteLine("Same.");
+            }
             System.Console.WriteLine("Press Any Key to Exit");
             Console.ReadKey();
 
@@ -229,12 +237,16 @@ namespace FalseColoring
                 //Starting row
                 int start = i * lRows;
                 //Ending row
-                int end = (lRows + 1) * i;
+                int end = lRows * (i+1);
                 //Prevent IndexOutOfBoundsException for last processor.
-                if (end >= grid.GetLength(1))
+                if(i == cc - 1)
                 {
                     end = grid.GetLength(1);
                 }
+                /*if (end >= grid.GetLength(1))
+                {
+                    end = grid.GetLength(1);
+                }*/
                 for (int row = start; row < end; row ++ )
                 {
                     for (int col = 0; col < grid.GetLength(0); col++)
