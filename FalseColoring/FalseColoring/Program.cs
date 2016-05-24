@@ -48,8 +48,8 @@ namespace FalseColoring
             Console.WriteLine("Elapsed time taken parallel: {0}", sw.ElapsedMilliseconds);
 
             // Output the results
-            PrintGrid(grid);
-            OutputImage(grid, "image2.bmp"); // Image stored in the bin/Debug folder of the project directory
+            PrintGrid(gridtwo);
+            OutputImage(gridtwo, "image2.bmp"); // Image stored in the bin/Debug folder of the project directory
 
             // Program is done, make sure to the let user see the results
             System.Console.WriteLine("Press Any Key to Exit");
@@ -277,41 +277,25 @@ namespace FalseColoring
          */
         static Color AssignColor(int temp)
         {
+            // Stores the RGB values
             double[] colorVals = new double[3];
 
-            // Color map is as follows:
-            // 0    -> (0, 0, 128)
-            // 500  -> (0, 255, 0)
-            // 1000 -> (255, 255, 0)
-            // 1500 -> (255, 128, 0)
-            // 2000 -> (255, 0, 0)
-            // Source: http://dsp.stackexchange.com/a/4679
+            // Begin building the color map
+            // Based off of information from http://dsp.stackexchange.com/a/4679
+            // and https://en.wikipedia.org/wiki/Linear_interpolation
 
-            // If the temp is not on the map, use linear interpolation to 
-            // determine the color for the temperature
+            // Color markers (cold = blue, lukewarm = white, hot = red)
             if (temp == 0)
             {
                 colorVals[0] = 0;
                 colorVals[1] = 0;
-                colorVals[2] = 128;
-            }
-            else if (temp == 500)
-            {
-                colorVals[0] = 0;
-                colorVals[1] = 255;
-                colorVals[2] = 0;
+                colorVals[2] = 255;
             }
             else if (temp == 1000)
             {
                 colorVals[0] = 255;
                 colorVals[1] = 255;
-                colorVals[2] = 0;
-            }
-            else if (temp == 1500)
-            {
-                colorVals[0] = 255;
-                colorVals[1] = 128;
-                colorVals[2] = 0;
+                colorVals[2] = 255;
             }
             else if (temp == 2000)
             {
@@ -321,63 +305,52 @@ namespace FalseColoring
             }
             else
             {
+                // If the temp is not on the map, use linear interpolation to 
+                // determine the color for the temperature
+
+                // Store the RGB values for the color markers the temp is between
                 int[] leftRGB = new int[3];
                 int[] rightRGB = new int[3];
-                double multiplier = 0.0;
 
-                // Determine the left and right RGB values for the calculation
-                if (temp > 0 && temp < 500)
+                // Store the temperature boundary points
+                double leftTempRange = 0;
+                double rightTempRange = 0;
+
+                // Determine where the temperature fits between the color markers
+                if (temp < 1000)
                 {
+                    // Between blue and white
                     leftRGB[0] = 0;
                     leftRGB[1] = 0;
-                    leftRGB[2] = 128;
-                    rightRGB[0] = 0;
-                    rightRGB[1] = 255;
-                    rightRGB[2] = 0;
-                    multiplier = 0.25;
-                }
-                else if (temp > 500 && temp < 1000)
-                {
-                    leftRGB[0] = 0;
-                    leftRGB[1] = 255;
-                    leftRGB[2] = 0;
+                    leftRGB[2] = 255;
                     rightRGB[0] = 255;
                     rightRGB[1] = 255;
-                    rightRGB[2] = 0;
-                    multiplier = 0.5;
+                    rightRGB[2] = 255;
+                    leftTempRange = 0.0;
+                    rightTempRange = 1000.0;
                 }
-                else if (temp > 1000 && temp < 1500)
+                else
                 {
+                    // Between the white and red
                     leftRGB[0] = 255;
                     leftRGB[1] = 255;
-                    leftRGB[2] = 0;
+                    leftRGB[2] = 255;
                     rightRGB[0] = 255;
-                    rightRGB[1] = 128;
+                    rightRGB[1] = 51;
                     rightRGB[2] = 0;
-                    multiplier = 0.75;
-                }
-                else if (temp > 1500 && temp < 2000)
-                {
-                    leftRGB[0] = 255;
-                    leftRGB[1] = 128;
-                    leftRGB[2] = 0;
-                    rightRGB[0] = 255;
-                    rightRGB[1] = 0;
-                    rightRGB[2] = 0;
-                    multiplier = 1.0;
+                    leftTempRange = 1000.0;
+                    rightTempRange = 2000.0;
                 }
 
-                // Assign the colors
+                // Assign the color based on the temperature using linear interpolation
                 for (int i = 0; i < 3; i++ )
                 {
-                    colorVals[i] = ((double) temp / 2000.0) * (double) leftRGB[i] / multiplier + ((2000.0 - (double) temp) / 2000.0) * rightRGB[i];
-
-                    // Make sure the colors don't exceed the accepted ranges
-                    if (colorVals[i] > 255.0) colorVals[i] = 255.0;
+                    colorVals[i] = (double) leftRGB[i] + ((double) rightRGB[i] - (double) leftRGB[i]) * (((double) temp - leftTempRange) / (rightTempRange - leftTempRange));
                 }
             }
 
-            return Color.FromArgb((int) Math.Ceiling(colorVals[0]), (int) Math.Ceiling(colorVals[1]), (int) Math.Ceiling(colorVals[2]));
+            // Return the RGB values as a Color
+            return Color.FromArgb((int)Math.Ceiling(colorVals[0]), (int)Math.Ceiling(colorVals[1]), (int) Math.Ceiling(colorVals[2]));
         }
 
         static void PrintGrid(int[,] grid)
@@ -413,7 +386,7 @@ namespace FalseColoring
                 }
             }
 
-            // Save it
+            // Save the image
             bitmap.Save(imageName);
         }
     }
