@@ -9,47 +9,44 @@ namespace FalseColoring
 {
     class Program
     {
+        // Set the temperature of the leftmost nodes
+        private static int maxTemp = 90000;
 
         static void Main(string[] args)
         {
             // Set up the grid dimensions
-            // Parallel will be slower for smaller grids
-            int width = 50;
-            int length = 10;
+            int width = 100;
+            int length = 200;
 
-            // Declare the 2D array
-            int[,] grid = new int[length, width];
-            int[,] gridtwo = new int[length, width];
+            // Declare the 2D arrays
+            int[,] gridSeq = new int[length, width];
+            int[,] gridPar = new int[length, width];
+
+            // Fill the grids with the starting values
+            SetupGrid(gridSeq);
+            SetupGrid(gridPar);
 
             // Keep track of the run time
             Stopwatch sw = new Stopwatch();
 
-            // Fill the 2D array with the starting values
-            SetupGrid(grid);
-
             // Solve sequentially
+            Console.WriteLine("Computing Sequentially . . .");
             sw.Start();
-            SeqGaussSeidel(grid);
+            SeqGaussSeidel(gridSeq);
             sw.Stop();
-            Console.WriteLine("Elapsed time taken sequentially: {0}", sw.ElapsedMilliseconds);
-
-            // Output the results
-            PrintGrid(grid);
-            OutputImage(grid, "image1.bmp"); // Image stored in the bin/Debug folder of the project directory
-
-            // Fill the 2D array with the starting values
-            SetupGrid(gridtwo);
+            //PrintGrid(gridSeq);
+            Console.WriteLine("Elapsed Time (Sequential): {0}\n", sw.ElapsedMilliseconds);
+            OutputImage(gridSeq, "imageSeq.bmp"); // Image stored in the bin/Debug folder of the project directory
 
             // Solve in parallel
+            Console.WriteLine("Computing in Parallel . . .");
             sw.Reset();
             sw.Start();
-            ParGaussSeidel(gridtwo);
+            ParGaussSeidel(gridPar);
             sw.Stop();
-            Console.WriteLine("Elapsed time taken parallel: {0}", sw.ElapsedMilliseconds);
-
-            // Output the results
-            PrintGrid(gridtwo);
-            OutputImage(gridtwo, "image2.bmp"); // Image stored in the bin/Debug folder of the project directory
+            //PrintGrid(gridPar);
+            Console.WriteLine("Elapsed Time (Parallel): {0}\n", sw.ElapsedMilliseconds);
+            OutputImage(gridPar, "imagePar.bmp"); // Image stored in the bin/Debug folder of the project directory
 
             // Program is done, make sure to the let user see the results
             System.Console.WriteLine("Press Any Key to Exit");
@@ -58,14 +55,15 @@ namespace FalseColoring
         }
 
         /*
-         * SeqTempSolver
+         * SetupGrid
          * 
          * Sets the starting temperature for each of the nodes assuming that the leftmost column
-         * has a temperature of 2000 degrees celsius and everything else has a temperature of
+         * has a temperature of maxTemp degrees celsius and everything else has a temperature of
          * 0 degrees celsius
          * 
          * Parameters:
          * int[,] grid - The input grid of all the nodes
+         * int maxTemp - The temperature of the leftmost column
          */
         static void SetupGrid(int[,] grid)
         {
@@ -77,8 +75,8 @@ namespace FalseColoring
                 {
                     if (col == 0)
                     {
-                        // Have to initialize the left side to 2000 degrees
-                        grid[0, row] = 2000;
+                        // Have to initialize the left side to the maximum temperature
+                        grid[0, row] = maxTemp;
                     }
                     else
                     {
@@ -97,7 +95,7 @@ namespace FalseColoring
          * Uses a sequential version of the Gauss-Seidell algorithm to find the temperature of each
          * section of a 2D metal plate that is submerged in a solution with a temperature of 0 degrees
          * celsius on each of the sides with the exception of the left which has a temperature of
-         * 2000 degrees celsius
+         * maxTemp degrees celsius
          * 
          * Parameters:
          * int[,] grid - The input grid of all the nodes that temperatures will be determined for
@@ -162,7 +160,7 @@ namespace FalseColoring
          * Uses a parallel version of the Gauss-Seidell algorithm to find the temperature of each
          * section of a 2D metal plate that is submerged in a solution with a temperature of 0 degrees
          * celsius on each of the sides with the exception of the left which has a temperature of
-         * 2000 degrees celsius
+         * maxTemp degrees celsius
          * 
          * Parameters:
          * int[,] grid - The input grid of all the nodes that temperatures will be determined for
@@ -291,13 +289,13 @@ namespace FalseColoring
                 colorVals[1] = 0;
                 colorVals[2] = 255;
             }
-            else if (temp == 1000)
+            else if (temp == maxTemp / 2)
             {
                 colorVals[0] = 255;
                 colorVals[1] = 255;
                 colorVals[2] = 255;
             }
-            else if (temp == 2000)
+            else if (temp == maxTemp)
             {
                 colorVals[0] = 255;
                 colorVals[1] = 0;
@@ -317,7 +315,7 @@ namespace FalseColoring
                 double rightTempRange = 0;
 
                 // Determine where the temperature fits between the color markers
-                if (temp < 1000)
+                if (temp < maxTemp / 2)
                 {
                     // Between blue and white
                     leftRGB[0] = 0;
@@ -327,7 +325,7 @@ namespace FalseColoring
                     rightRGB[1] = 255;
                     rightRGB[2] = 255;
                     leftTempRange = 0.0;
-                    rightTempRange = 1000.0;
+                    rightTempRange = (double) (maxTemp / 2);
                 }
                 else
                 {
@@ -338,8 +336,8 @@ namespace FalseColoring
                     rightRGB[0] = 255;
                     rightRGB[1] = 51;
                     rightRGB[2] = 0;
-                    leftTempRange = 1000.0;
-                    rightTempRange = 2000.0;
+                    leftTempRange = (double)(maxTemp / 2);
+                    rightTempRange = (double) maxTemp;
                 }
 
                 // Assign the color based on the temperature using linear interpolation
@@ -350,7 +348,7 @@ namespace FalseColoring
             }
 
             // Return the RGB values as a Color
-            return Color.FromArgb((int)Math.Ceiling(colorVals[0]), (int)Math.Ceiling(colorVals[1]), (int) Math.Ceiling(colorVals[2]));
+            return Color.FromArgb((int) Math.Ceiling(colorVals[0]), (int) Math.Ceiling(colorVals[1]), (int) Math.Ceiling(colorVals[2]));
         }
 
         static void PrintGrid(int[,] grid)
