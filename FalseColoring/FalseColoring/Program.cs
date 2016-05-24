@@ -10,7 +10,7 @@ namespace FalseColoring
     class Program
     {
         // Set the temperature of the leftmost nodes
-        private static int maxTemp = 90000;
+        private static int maxTemp = 10000;
 
         static void Main(string[] args)
         {
@@ -32,7 +32,7 @@ namespace FalseColoring
             // Solve sequentially
             Console.WriteLine("Computing Sequentially . . .");
             sw.Start();
-            SeqGaussSeidel(gridSeq);
+            GaussSeidel(gridSeq, false);
             sw.Stop();
             //PrintGrid(gridSeq);
             Console.WriteLine("Elapsed Time (Sequential): {0}\n", sw.ElapsedMilliseconds);
@@ -42,7 +42,7 @@ namespace FalseColoring
             Console.WriteLine("Computing in Parallel . . .");
             sw.Reset();
             sw.Start();
-            ParGaussSeidel(gridPar);
+            GaussSeidel(gridPar, true);
             sw.Stop();
             //PrintGrid(gridPar);
             Console.WriteLine("Elapsed Time (Parallel): {0}\n", sw.ElapsedMilliseconds);
@@ -92,17 +92,17 @@ namespace FalseColoring
         }
 
         /*
-         * SeqTempSolver
+         * GaussSeidel
          * 
-         * Uses a sequential version of the Gauss-Seidell algorithm to find the temperature of each
-         * section of a 2D metal plate that is submerged in a solution with a temperature of 0 degrees
+         * Uses the Gauss-Seidell algorithm to find the temperatures of each section of a 2D 
+         * metal plate that is submerged in a solution with a temperature of 0 degrees
          * celsius on each of the sides with the exception of the left which has a temperature of
          * maxTemp degrees celsius
          * 
          * Parameters:
          * int[,] grid - The input grid of all the nodes that temperatures will be determined for
          */
-        static void SeqGaussSeidel(int[,] grid)
+        static void GaussSeidel(int[,] grid, bool parallel)
         {
             // Keep calculating the temperatures until they stabilize
 
@@ -120,14 +120,15 @@ namespace FalseColoring
                 prevGrid = (int[,]) grid.Clone();
 
                 // Calculate the temperatures
-                SeqTempSolver(grid);
+                if (parallel == true) ParTempSolver(grid);
+                else SeqTempSolver(grid);
             }
         }
 
         /*
          * SeqTempSolver
          * 
-         * Finds the temperature for each of the nodes
+         * Finds the temperature for each of the nodes sequentially
          * 
          * Parameters:
          * int[,] grid - The input grid of all the nodes that temperatures will be calculated for
@@ -159,40 +160,7 @@ namespace FalseColoring
         /*
          * ParTempSolver
          * 
-         * Uses a parallel version of the Gauss-Seidell algorithm to find the temperature of each
-         * section of a 2D metal plate that is submerged in a solution with a temperature of 0 degrees
-         * celsius on each of the sides with the exception of the left which has a temperature of
-         * maxTemp degrees celsius
-         * 
-         * Parameters:
-         * int[,] grid - The input grid of all the nodes that temperatures will be determined for
-         */
-        static void ParGaussSeidel(int[,] grid)
-        {
-            // Keep calculating the temperatures until they stabilize
-
-            // Previous Grid
-            // Used to make sure the final temperature has been found
-            int[,] prevGrid = new int[grid.GetLength(0), grid.GetLength(1)];
-
-            // Use LINQ to compare the grids (http://stackoverflow.com/questions/12446770/how-to-compare-multidimensional-arrays-in-c-sharp)
-            // Only stop when the previous is the same as the current
-            while (!(prevGrid.Rank == grid.Rank &&
-                     Enumerable.Range(0, prevGrid.Rank).All(dimension => prevGrid.GetLength(dimension) == grid.GetLength(dimension)) &&
-                     prevGrid.Cast<int>().SequenceEqual(grid.Cast<int>())))
-            {
-                // Cannot just assign it straight across because that passes the memory space not the values
-                prevGrid = (int[,])grid.Clone();
-
-                // Calculate the temperatures
-                ParTempSolver(grid);
-            }
-        }
-
-        /*
-         * ParTempSolver
-         * 
-         * Finds the temperature for each of the nodes
+         * Finds the temperature for each of the nodes in parallel
          * 
          * Parameters:
          * int[,] grid - The input grid of all the nodes that temperatures will be calculated for
@@ -353,6 +321,15 @@ namespace FalseColoring
             return Color.FromArgb((int) Math.Ceiling(colorVals[0]), (int) Math.Ceiling(colorVals[1]), (int) Math.Ceiling(colorVals[2]));
         }
 
+        /*
+         * PrintGrid
+         * 
+         * Prints the grid to the console. Does not work well for grids that are 
+         * larger than the console window.
+         * 
+         * Parameters:
+         * int[,] grid - input grid to be printed
+         */
         static void PrintGrid(int[,] grid)
         {
             // Print the grid
@@ -372,6 +349,15 @@ namespace FalseColoring
             }
         }
 
+        /*
+         * OutputImage
+         * 
+         * Outputs the grid as a BMP false color image.
+         * 
+         * Parameters:
+         * int[,] grid - The input grid to be turned into a false color image
+         * string imageName - The filename of the outputted image
+         */
         static void OutputImage(int[,] grid, string imageName)
         {
             // Set up the image
@@ -390,17 +376,17 @@ namespace FalseColoring
             bitmap.Save(imageName);
         }
 
-        /*  OpenImage
+        /*  
+         * OpenImage
          *  
-         *  Opens the image for viewing. Image will be in running directory of program.
-         *  Credit to user SnOrfus on Stackexchange for how to do this.
-         *  http://stackoverflow.com/questions/1283584/how-do-i-launch-files-in-c-sharp
+         * Opens the image for viewing. Image will be in running directory of program.
          *  
-         *  Parameters:
-         *  string filename - The name of the file that will be opened.
+         * Parameters:
+         * string filename - The name of the file that will be opened
          */
         static void OpenImage(string filename)
         {
+            // Based off of information from http://stackoverflow.com/a/1283593
             Process process = new Process();
             process.EnableRaisingEvents = false;
             process.StartInfo.FileName = filename;
