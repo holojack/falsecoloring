@@ -2,97 +2,68 @@
 using System.Diagnostics; // For the stopwatch
 using System.Threading.Tasks; // For the Parallel
 using System.Linq; // For the 2D array comparison
+using System.Drawing; // For the color
+using System.Drawing.Imaging; // For the image output
 
 namespace FalseColoring
 {
     class Program
     {
+        // Set the temperature of the leftmost nodes
+        private static int maxTemp = 90000;
 
-        private static int cc = Environment.ProcessorCount;
         static void Main(string[] args)
         {
             // Set up the grid dimensions
-            //Parallel will be slower for smaller width and length amounts
-            int width = 2001;
-            int length = 2000;
+            int width = 100;
+            int length = 200;
 
-            // Declare the 2D array
-            int[,] grid = new int[length, width];
-            int[,] gridtwo = new int[length, width];
+            // Declare the 2D arrays
+            int[,] gridSeq = new int[length, width];
+            int[,] gridPar = new int[length, width];
 
+            // Fill the grids with the starting values
+            SetupGrid(gridSeq);
+            SetupGrid(gridPar);
+
+            // Keep track of the run time
             Stopwatch sw = new Stopwatch();
-            // Fill the 2D array with the starting values
-            SetupGrid(grid);
 
-            sw.Start();
             // Solve sequentially
-            SeqGaussSeidel(grid);
+            Console.WriteLine("Computing Sequentially . . .");
+            sw.Start();
+            SeqGaussSeidel(gridSeq);
             sw.Stop();
-            Console.WriteLine("Elapsed time taken sequentially: {0}", sw.ElapsedMilliseconds);
-
-            // Print the results
-            /*for (int row = 0; row < width; row++)
-            {
-                for (int col = 0; col < length; col++)
-                {
-                    if (col == length - 1)
-                    {
-                        System.Console.WriteLine(grid[col, row]);
-                    }
-                    else
-                    {
-                        System.Console.Write(grid[col, row] + "-");
-                    }
-                }
-            }*/
-
-            // Fill the 2D array with the starting values
-            SetupGrid(gridtwo);
+            //PrintGrid(gridSeq);
+            Console.WriteLine("Elapsed Time (Sequential): {0}\n", sw.ElapsedMilliseconds);
+            OutputImage(gridSeq, "imageSeq.bmp"); // Image stored in the bin/Debug folder of the project directory
 
             // Solve in parallel
+            Console.WriteLine("Computing in Parallel . . .");
             sw.Reset();
             sw.Start();
-            ParGaussSeidel(gridtwo);
+            ParGaussSeidel(gridPar);
             sw.Stop();
-            Console.WriteLine("Elapsed time taken parallel: {0}", sw.ElapsedMilliseconds);
-            // Print the results
-            /*for (int row = 0; row < width; row++)
-            {
-                for (int col = 0; col < length; col++)
-                {
-                    if (col == length - 1)
-                    {
-                        System.Console.WriteLine(grid[col, row]);
-                    }
-                    else
-                    {
-                        System.Console.Write(grid[col, row] + "-");
-                    }
-                }
-            }*/
+            //PrintGrid(gridPar);
+            Console.WriteLine("Elapsed Time (Parallel): {0}\n", sw.ElapsedMilliseconds);
+            OutputImage(gridPar, "imagePar.bmp"); // Image stored in the bin/Debug folder of the project directory
 
             // Program is done, make sure to the let user see the results
-
-            if(gridtwo.Rank == grid.Rank &&
-                     Enumerable.Range(0, gridtwo.Rank).All(dimension => gridtwo.GetLength(dimension) == grid.GetLength(dimension)) &&
-                     gridtwo.Cast<int>().SequenceEqual(grid.Cast<int>()))
-            {
-                Console.WriteLine("Same.");
-            }
             System.Console.WriteLine("Press Any Key to Exit");
             Console.ReadKey();
 
         }
 
         /*
-         * SeqTempSolver
+         * SetupGrid
          * 
          * Sets the starting temperature for each of the nodes assuming that the leftmost column
-         * has a temperature of 2000 degrees celsius and everything else has a temperature of
+         * has a temperature of maxTemp degrees celsius and everything else has a temperature of
          * 0 degrees celsius
          * 
          * Parameters:
          * int[,] grid - The input grid of all the nodes
+         * int maxTemp - The temperature of the leftmost column
          */
         static void SetupGrid(int[,] grid)
         {
@@ -104,8 +75,8 @@ namespace FalseColoring
                 {
                     if (col == 0)
                     {
-                        // Have to initialize the left side to 2000 degrees
-                        grid[0, row] = 2000;
+                        // Have to initialize the left side to the maximum temperature
+                        grid[0, row] = maxTemp;
                     }
                     else
                     {
@@ -124,7 +95,7 @@ namespace FalseColoring
          * Uses a sequential version of the Gauss-Seidell algorithm to find the temperature of each
          * section of a 2D metal plate that is submerged in a solution with a temperature of 0 degrees
          * celsius on each of the sides with the exception of the left which has a temperature of
-         * 2000 degrees celsius
+         * maxTemp degrees celsius
          * 
          * Parameters:
          * int[,] grid - The input grid of all the nodes that temperatures will be determined for
@@ -189,7 +160,7 @@ namespace FalseColoring
          * Uses a parallel version of the Gauss-Seidell algorithm to find the temperature of each
          * section of a 2D metal plate that is submerged in a solution with a temperature of 0 degrees
          * celsius on each of the sides with the exception of the left which has a temperature of
-         * 2000 degrees celsius
+         * maxTemp degrees celsius
          * 
          * Parameters:
          * int[,] grid - The input grid of all the nodes that temperatures will be determined for
@@ -230,25 +201,30 @@ namespace FalseColoring
             ParallelOptions options = new ParallelOptions();
             options.MaxDegreeOfParallelism = -1;
 
-            //Divide the array in chunks each rows/cc size.
+            // Chunk size
+            int cc = Environment.ProcessorCount;
+
+            // Divide the array in chunks each rows/cc size.
             Parallel.For(0, cc, options, i => {
-                //how many rows the core will process.
-                int lRows = grid.GetLength(1)/cc;
-                //Starting row
+
+                // Number of rows the core will process.
+                int lRows = grid.GetLength(1) / cc;
+
+                // Starting row
                 int start = i * lRows;
-                //Ending row
+
+                // Ending row
                 int end = lRows * (i+1);
-                //Prevent IndexOutOfBoundsException for last processor.
+
+                // Prevent IndexOutOfBoundsException for last processor.
                 if(i == cc - 1)
                 {
                     end = grid.GetLength(1);
                 }
-                /*if (end >= grid.GetLength(1))
-                {
-                    end = grid.GetLength(1);
-                }*/
+
                 for (int row = start; row < end; row ++ )
                 {
+                    // Loop over the columns
                     for (int col = 0; col < grid.GetLength(0); col++)
                     {
                         // Only loop over the insides, since the outside nodes are equal to the outside temperature
@@ -266,27 +242,6 @@ namespace FalseColoring
                     }
                 }
             });
-            // Loop over the rows
-            /*for (int row = 0; row < grid.GetLength(1); row++)
-            {
-                // Loop over the columns
-                //for (int col = 0; col < grid.GetLength(0); col++)
-                Parallel.For(0, grid.GetLength(0), options, col =>
-                {
-                    // Only loop over the insides, since the outside nodes are equal to the outside temperature
-                    if (col != 0 && col != grid.GetLength(0) - 1 && row != 0 && row != grid.GetLength(1) - 1)
-                    {
-                        // Assume that the starting temperature is 0
-                        int leftTemp = grid[col - 1, row];
-                        int topTemp = grid[col, row - 1];
-                        int rightTemp = grid[col + 1, row];
-                        int bottomTemp = grid[col, row + 1];
-
-                        // Calculate the temperature for the node and store it
-                        grid[col, row] = CalcTemp(leftTemp, topTemp, rightTemp, bottomTemp);
-                    }
-                });
-            }*/
         }
 
         /*
@@ -306,6 +261,131 @@ namespace FalseColoring
         {
             // Find the temperature by averaging the four grids around it
             return (left + top + right + bottom) / 4;
+        }
+
+        /*
+         * AssignColor
+         * 
+         * Assigns a color to the given node temperature
+         * 
+         * Parameters:
+         * int temp - The node temperature
+         * 
+         * Returns: The corresponding color
+         */
+        static Color AssignColor(int temp)
+        {
+            // Stores the RGB values
+            double[] colorVals = new double[3];
+
+            // Begin building the color map
+            // Based off of information from http://dsp.stackexchange.com/a/4679
+            // and https://en.wikipedia.org/wiki/Linear_interpolation
+
+            // Color markers (cold = blue, lukewarm = white, hot = red)
+            if (temp == 0)
+            {
+                colorVals[0] = 0;
+                colorVals[1] = 0;
+                colorVals[2] = 255;
+            }
+            else if (temp == maxTemp / 2)
+            {
+                colorVals[0] = 255;
+                colorVals[1] = 255;
+                colorVals[2] = 255;
+            }
+            else if (temp == maxTemp)
+            {
+                colorVals[0] = 255;
+                colorVals[1] = 0;
+                colorVals[2] = 0;
+            }
+            else
+            {
+                // If the temp is not on the map, use linear interpolation to 
+                // determine the color for the temperature
+
+                // Store the RGB values for the color markers the temp is between
+                int[] leftRGB = new int[3];
+                int[] rightRGB = new int[3];
+
+                // Store the temperature boundary points
+                double leftTempRange = 0;
+                double rightTempRange = 0;
+
+                // Determine where the temperature fits between the color markers
+                if (temp < maxTemp / 2)
+                {
+                    // Between blue and white
+                    leftRGB[0] = 0;
+                    leftRGB[1] = 0;
+                    leftRGB[2] = 255;
+                    rightRGB[0] = 255;
+                    rightRGB[1] = 255;
+                    rightRGB[2] = 255;
+                    leftTempRange = 0.0;
+                    rightTempRange = (double) (maxTemp / 2);
+                }
+                else
+                {
+                    // Between the white and red
+                    leftRGB[0] = 255;
+                    leftRGB[1] = 255;
+                    leftRGB[2] = 255;
+                    rightRGB[0] = 255;
+                    rightRGB[1] = 51;
+                    rightRGB[2] = 0;
+                    leftTempRange = (double)(maxTemp / 2);
+                    rightTempRange = (double) maxTemp;
+                }
+
+                // Assign the color based on the temperature using linear interpolation
+                for (int i = 0; i < 3; i++ )
+                {
+                    colorVals[i] = (double) leftRGB[i] + ((double) rightRGB[i] - (double) leftRGB[i]) * (((double) temp - leftTempRange) / (rightTempRange - leftTempRange));
+                }
+            }
+
+            // Return the RGB values as a Color
+            return Color.FromArgb((int) Math.Ceiling(colorVals[0]), (int) Math.Ceiling(colorVals[1]), (int) Math.Ceiling(colorVals[2]));
+        }
+
+        static void PrintGrid(int[,] grid)
+        {
+            // Print the grid
+            for (int row = 0; row < grid.GetLength(1); row++)
+            {
+                for (int col = 0; col < grid.GetLength(0); col++)
+                {
+                    if (col == grid.GetLength(0) - 1)
+                    {
+                        System.Console.WriteLine(grid[col, row]);
+                    }
+                    else
+                    {
+                        System.Console.Write(grid[col, row] + "-");
+                    }
+                }
+            }
+        }
+
+        static void OutputImage(int[,] grid, string imageName)
+        {
+            // Set up the image
+            Bitmap bitmap = new Bitmap(grid.GetLength(0), grid.GetLength(1));
+
+            // Add the pixels to the image
+            for (int row = 0; row < grid.GetLength(1); row++)
+            {
+                for (int col = 0; col < grid.GetLength(0); col++)
+                {
+                    bitmap.SetPixel(col, row, AssignColor(grid[col, row]));
+                }
+            }
+
+            // Save the image
+            bitmap.Save(imageName);
         }
     }
 }
