@@ -14,11 +14,12 @@ namespace FalseColoring
         {
             // Set up the grid dimensions
             // Parallel will be slower for smaller grids
-            int width = 500;
-            int length = 500;
+            int width = 50;
+            int length = 10;
 
             // Declare the 2D array
             int[,] grid = new int[length, width];
+            int[,] gridtwo = new int[length, width];
 
             // Keep track of the run time
             Stopwatch sw = new Stopwatch();
@@ -33,21 +34,21 @@ namespace FalseColoring
             Console.WriteLine("Elapsed time taken sequentially: {0}", sw.ElapsedMilliseconds);
 
             // Output the results
-            //PrintGrid(grid);
+            PrintGrid(grid);
             OutputImage(grid, "image1.bmp"); // Image stored in the bin/Debug folder of the project directory
 
             // Fill the 2D array with the starting values
-            SetupGrid(grid);
+            SetupGrid(gridtwo);
 
             // Solve in parallel
             sw.Reset();
             sw.Start();
-            ParGaussSeidel(grid);
+            ParGaussSeidel(gridtwo);
             sw.Stop();
             Console.WriteLine("Elapsed time taken parallel: {0}", sw.ElapsedMilliseconds);
 
             // Output the results
-            //PrintGrid(grid);
+            PrintGrid(grid);
             OutputImage(grid, "image2.bmp"); // Image stored in the bin/Debug folder of the project directory
 
             // Program is done, make sure to the let user see the results
@@ -203,27 +204,26 @@ namespace FalseColoring
             options.MaxDegreeOfParallelism = -1;
 
             // Chunk size
-            int chunkSize = 8;
+            int cc = Environment.ProcessorCount;
 
             // Divide the array in chunks each rows/cc size.
-            Parallel.For(0, chunkSize, options, i => {
+            Parallel.For(0, cc, options, i => {
 
                 // Number of rows the core will process.
-                int lRows = grid.GetLength(1)/chunkSize;
+                int lRows = grid.GetLength(1) / cc;
 
                 // Starting row
                 int start = i * lRows;
 
                 // Ending row
-                int end = (lRows + 1) * i;
+                int end = lRows * (i+1);
 
                 // Prevent IndexOutOfBoundsException for last processor.
-                if (end >= grid.GetLength(1))
+                if(i == cc - 1)
                 {
                     end = grid.GetLength(1);
                 }
 
-                // Loop over the rows
                 for (int row = start; row < end; row ++ )
                 {
                     // Loop over the columns
