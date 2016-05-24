@@ -49,6 +49,8 @@ namespace FalseColoring
             OutputImage(gridPar, "imagePar.bmp"); // Image stored in the bin/Debug folder of the project directory
 
             // Program is done, make sure to the let user see the results
+            OpenImage("imagePar.bmp");
+            OpenImage("imageSeq.bmp");
             System.Console.WriteLine("Press Any Key to Exit");
             Console.ReadKey();
 
@@ -386,6 +388,23 @@ namespace FalseColoring
 
             // Save the image
             bitmap.Save(imageName);
+        }
+
+        /*  OpenImage
+         *  
+         *  Opens the image for viewing. Image will be in running directory of program.
+         *  Credit to user SnOrfus on Stackexchange for how to do this.
+         *  http://stackoverflow.com/questions/1283584/how-do-i-launch-files-in-c-sharp
+         *  
+         *  Parameters:
+         *  string filename - The name of the file that will be opened.
+         */
+        static void OpenImage(string filename)
+        {
+            Process process = new Process();
+            process.EnableRaisingEvents = false;
+            process.StartInfo.FileName = filename;
+            process.Start();
         }
     }
 }
